@@ -1,0 +1,48 @@
+plugins {
+  id 'java'
+  id 'application'
+  id 'idea'
+}
+
+repositories {
+  mavenCentral()
+}
+
+dependencies {
+  implementation (
+    'org.eclipse.jetty.aggregate:jetty-all:9.4.24.v20191120',
+    'org.freemarker:freemarker:2.3.29',
+    'org.xerial:sqlite-jdbc:3.28.0'
+  )
+}
+
+application {
+  mainClass = 'ELEN4024A.cwk2.AppServer'
+}
+
+idea {
+  module {
+    outputDir file('build/classes/main')
+    testOutputDir file('build/classes/test')
+  }
+}
+
+task submission(type: Zip) {
+  group = 'Submission'
+  description = 'Generates Zip archive suitable for submission.'
+
+  archiveFileName = 'cwk2.zip'
+  destinationDirectory = project.rootDir
+
+  from("$project.rootDir") {
+    exclude 'cwk2.zip', 'build', '.git', '.gradle', '.idea'
+  }
+
+  doFirst {
+    assert file("report.pdf").exists()
+  }
+
+  doLast {
+    logger.warn("cwk2.zip generated.")
+  }
+}
