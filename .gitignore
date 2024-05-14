@@ -6,9 +6,11 @@ gradle.properties
 
 .log
 
+
 .vscode/
 
 *.sqlite3
+*.sql
 *.db
 *.db3
 development.sqlite3
