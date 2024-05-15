@@ -8,6 +8,7 @@ gradle.properties
 
 
 .vscode/
+*.pdf
 
 *.sqlite3
 *.sql
