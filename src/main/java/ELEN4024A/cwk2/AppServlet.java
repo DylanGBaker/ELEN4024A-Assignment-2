@@ -7,6 +7,7 @@ import java.sql.DriverManager;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.sql.Statement;
+import java.sql.PreparedStatement;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
@@ -26,7 +27,7 @@ import freemarker.template.TemplateExceptionHandler;
 public class AppServlet extends HttpServlet {
 
   private static final String CONNECTION_URL = "jdbc:sqlite:db.sqlite3";
-  private static final String AUTH_QUERY = "select * from user where username='%s' and password='%s'";
+  private static final String AUTH_QUERY = "select * from user where username=? and password=?";
   private static final String SEARCH_QUERY = "select * from patient where surname like '%s'";
 
   private final Configuration fm = new Configuration(Configuration.VERSION_2_3_28);
@@ -103,15 +104,36 @@ public class AppServlet extends HttpServlet {
   }
 
   private boolean authenticated(String username, String password) throws SQLException {
-    String query = String.format(AUTH_QUERY, username, password);
-    try (Statement stmt = database.createStatement()) {
-      ResultSet results = stmt.executeQuery(query);
+    //String query = String.format(AUTH_QUERY, username, password);
+    /*
+     * By formatting the user input into the search query that allows
+     * the SQL injection to work. By using the 'PreparedStatement', it takes
+     * the user input and makes it the username/password. So if the attacker
+     * puts ' OR '1'='1'--, the username will become that instead of making
+     * the username an empty string and adding OR '1'='1' into the query. 
+     */
+    try (PreparedStatement pstmt = database.prepareStatement(AUTH_QUERY)) {
+      // ResultSet results = stmt.executeQuery(query);
+      pstmt.setString(1, username);
+      pstmt.setString(2, password);
+      ResultSet results = pstmt.executeQuery();
       return results.next();
     }
   }
 
   private List<Record> searchResults(String surname) throws SQLException {
     List<Record> records = new ArrayList<>();
+    /*
+     * Prepared statements prevent the username input field SQL injection.
+     * If the attacker gets a username and password they can still enter 
+     * % into the surname input field to get all the records.
+     * To prevent that I have just used an if statement to check if the
+     * input contains a %. If it does then it returns early and the records
+     * are empty. This will then show no records on the web app.
+     */
+    if (surname.contains("%")){
+      return records;
+    }
     String query = String.format(SEARCH_QUERY, surname);
     try (Statement stmt = database.createStatement()) {
       ResultSet results = stmt.executeQuery(query);
